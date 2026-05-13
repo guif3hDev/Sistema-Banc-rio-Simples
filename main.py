@@ -1,107 +1,269 @@
 from colorama import Fore
 from datetime import datetime
 
-# data = datetime.now().strftime("%d/%m/%Y %H:%M") Esse comando serve para marcar a hora e a data exata - uso junto da função salvar_extrato
-saldo = 0 # Aqui eu crio um contador para sempre salvar os depositos e os saques - IMPORTANTE PARA AS PRÓXIMAS LÓGICAS ONDE EU TENHO QUE SALVAR UM VALOR QUE ALTERA!
-extrato = [] # Aqui eu crio uma lista para salvar as transações feitas, e uso um for para percorrer a lista e me mostrar em forma listada!
+# Aqui eu crio um dicionário para armazenar todos os usuários cadastrados
+# Cada usuário terá:
+# senha, saldo e extrato próprio
+usuarios = {}
+
+# Variável de controle:
+# False = usuário não está logado
+# True = usuário logado
+logado = False
+
+# Aqui eu salvo qual usuário fez login
+# Exemplo: "gui@email.com"
+usuario_atual = None
+
 
 # 1 - Depositar
 def depositar():
-    global saldo
-    
+
+    # Se ninguém estiver logado, bloqueia a função
+    if not logado:
+        print(Fore.RED + "Faça login primeiro!")
+        return  # Se o valor for inválido, o return encerra a função imediatamente para não continuar o depósito
+
     try:
         deposito = float(input("Quanto deseja depositar: R$"))
 
+        # Verifica se o valor é menor ou igual a zero
         if deposito <= 0:
-            print("Digite um valor válido!")
-            return
-        
-        saldo += deposito
-        print(Fore.GREEN + "Deposito realizado!")
-        print(Fore.YELLOW + f"Saldo ATUAL: R${saldo:.2f}")
+            print(Fore.RED + "Digite um valor válido!")
+            return # return = encerra a função imediatamente
 
+        # Aqui eu acesso o saldo do usuário logado
+        # e adiciono o valor do depósito
+        usuarios[usuario_atual]["saldo"] += deposito
+
+        # Aqui eu pego a data e hora atual
         data = datetime.now().strftime("%d/%m/%Y %H:%M")
-        extrato.append(f"[{data}] DEPÓSITO: + R${deposito:.2f}") # Aqui anteriormente eu coloquei para salvar o saldo, mas o correto é salvar o deposito!
+
+        # Aqui eu adiciono uma movimentação no extrato do usuário
+        usuarios[usuario_atual]["extrato"].append(
+            f"[{data}] DEPÓSITO: + R${deposito:.2f}"
+        )
+
+        # Salva o extrato no arquivo .txt
         salvar_extrato()
-    
+
+        print(Fore.GREEN + "Depósito realizado!")
+
+        # Mostra o saldo atualizado do usuário
+        print(
+            Fore.YELLOW +
+            f"Saldo atual: R${usuarios[usuario_atual]['saldo']:.2f}"
+        )
+
+    # Caso o usuário digite letras ao invés de números
     except ValueError:
         print(Fore.RED + "Digite apenas números!")
+
 
 # 2 - Sacar
 def sacar():
-    global saldo
+
+    # Bloqueia a função se não houver login
+    if not logado:
+        print(Fore.RED + "Faça login primeiro!")
+        return # return = encerra a função imediatamente
 
     try:
-        saque = float(input("Quanto deseja sacar: "))
+        saque = float(input("Quanto deseja sacar: R$"))
 
-        if saque > saldo:
-            print(Fore.RED + "Saldo insuficiente!") # Aqui eu deveria ter verificado se o saque é maior que o saldo, pois sem isso dá para sacar negativo!
-            return
-        
-        elif saque <= 0:
+        # Não permite saque zero ou negativo
+        if saque <= 0:
             print(Fore.RED + "Digite um valor válido!")
-            return
-        
-        saldo -= saque
-        
+            return # return = encerra a função imediatamente
+
+        # Verifica se o usuário possui saldo suficiente
+        if saque > usuarios[usuario_atual]["saldo"]:
+            print(Fore.RED + "Saldo insuficiente!")
+            return 
+
+        # Remove o valor do saldo
+        usuarios[usuario_atual]["saldo"] -= saque
+
+        # Pega data e hora atual
         data = datetime.now().strftime("%d/%m/%Y %H:%M")
-        extrato.append(f"[{data}] SAQUE: - R${saque:.2f}") # Aqui eu errei a mesma coisa na função depositar! Mas consertei.
+
+        # Salva a movimentação no extrato
+        usuarios[usuario_atual]["extrato"].append(
+            f"[{data}] SAQUE: - R${saque:.2f}"
+        )
+
+        # Salva o extrato no arquivo .txt
         salvar_extrato()
+
         print(Fore.GREEN + "Saque realizado!")
-        print(Fore.YELLOW + f"Saldo ATUAL: R${saldo:.2f}")
-    
+
+        # Mostra saldo atualizado
+        print(
+            Fore.YELLOW +
+            f"Saldo atual: R${usuarios[usuario_atual]['saldo']:.2f}"
+        )
+
     except ValueError:
         print(Fore.RED + "Digite apenas números!")
 
+
 # 3 - Ver saldo
 def ver_saldo():
-    print(Fore.GREEN + f"SALDO: R${saldo:.2f}")
+
+    # Bloqueia caso não tenha login
+    if not logado:
+        print(Fore.RED + "Faça login primeiro!")
+        return
+
+    # Mostra o saldo do usuário atual
+    print(
+        Fore.GREEN +
+        f"SALDO: R${usuarios[usuario_atual]['saldo']:.2f}"
+    )
 
 
 # 4 - Ver extrato
 def ver_extrato():
-    if not extrato:
+
+    # Bloqueia se não houver login
+    if not logado:
+        print(Fore.RED + "Faça login primeiro!")
+        return
+
+    # Verifica se o extrato está vazio
+    if not usuarios[usuario_atual]["extrato"]:
         print(Fore.RED + "Não há movimentações!")
 
     else:
-        for ver in extrato:
-            print(f"{ver}")
-        
-menu = {
-    "1" : depositar,
-    "2" : sacar,
-    "3" : ver_saldo,
-    "4" : ver_extrato, 
+
+        # Percorre toda a lista do extrato
+        # e mostra cada movimentação
+        for item in usuarios[usuario_atual]["extrato"]:
+            print(item)
+
+
+# Função responsável por salvar o extrato em um arquivo .txt
+def salvar_extrato():
+
+    # "w" = sobrescreve o arquivo inteiro
+    # encoding="utf-8" permite usar caracteres especiais
+    with open("extrato.txt", "w", encoding="utf-8") as arquivo:
+
+        # Percorre o extrato do usuário logado
+        for item in usuarios[usuario_atual]["extrato"]:
+
+            # Escreve cada item em uma linha do arquivo
+            arquivo.write(f"{item}\n")
+
+
+# Função para cadastrar usuário
+def cadastrar_usuario():
+
+    email = input("Cadastre seu email: ")
+    senha = input("Cadastre sua senha: ")
+
+    # Verifica se o email já existe
+    if email in usuarios:
+        print(Fore.RED + "Usuário já cadastrado!")
+        return
+
+    # Aqui eu crio um dicionário dentro do dicionário usuarios
+    # Cada usuário terá:
+    # senha, saldo e extrato próprio
+    usuarios[email] = {
+        "senha": senha,
+        "saldo": 0,
+        "extrato": []
     }
 
-def salvar_extrato():
-    with open("extrato.txt", "w", encoding="utf-8") as arquivo:
-        for item in extrato:
-            arquivo.write(f"{item}\n")
-    
-# 5 - Sair
+    print(Fore.GREEN + "Usuário cadastrado com sucesso!")
+
+
+# Função de login
+def login_usuario():
+
+    # "global" permite alterar variáveis fora da função
+    global logado, usuario_atual
+
+    # Quantidade máxima de tentativas
+    tentativas = 3
+
+    while tentativas > 0:
+
+        email_login = input(Fore.WHITE + "Digite seu email: ")
+        senha_login = input(Fore.WHITE + "Digite sua senha: ")
+
+        # Verifica:
+        # 1 - Se o email existe
+        # 2 - Se a senha está correta
+        if (
+            email_login in usuarios and
+            senha_login == usuarios[email_login]["senha"]
+        ):
+
+            print(Fore.GREEN + "Login realizado com sucesso!")
+
+            # Marca que o usuário está logado
+            logado = True
+
+            # Salva quem é o usuário atual
+            usuario_atual = email_login
+
+            return
+
+        else:
+
+            # Remove uma tentativa
+            tentativas -= 1
+
+            print(
+                Fore.RED +
+                f"Senha incorreta. Tentativas restantes: {tentativas}"
+            )
+
+
+# Dicionário que liga opções do menu às funções
+menu = {
+    "1": cadastrar_usuario,
+    "2": login_usuario,
+    "3": depositar,
+    "4": sacar,
+    "5": ver_saldo,
+    "6": ver_extrato
+}
+
+
+# Menu principal do sistema
 def menu_principal():
 
     while True:
+
         print(Fore.WHITE + """
 === BANCO PYTHON ===
-\n1 - Depositar
-2 - Sacar
-3 - Ver saldo
-4 - Ver extrato
-5 - Sair
-    """)
-        
+
+1 - Cadastrar usuário
+2 - Login usuário
+3 - Depositar
+4 - Sacar
+5 - Ver saldo
+6 - Ver extrato
+7 - Sair
+""")
+
         opcao = input(Fore.BLUE + "Escolha uma opção: ")
 
+        # Executa a função correspondente do dicionário menu
         if opcao in menu:
             menu[opcao]()
 
-        elif opcao == "5":
+        # Fecha o programa
+        elif opcao == "7":
             print(Fore.YELLOW + "Saindo...")
             break
 
         else:
             print(Fore.RED + "Opção inválida!")
 
+
+# Inicia o sistema
 menu_principal()
