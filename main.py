@@ -1,4 +1,4 @@
-from colorama import Fore
+from colorama import Fore # type: ignore
 from datetime import datetime
 
 # Aqui eu crio um dicionário para armazenar todos os usuários cadastrados
@@ -221,7 +221,18 @@ def login_usuario():
                 f"Senha incorreta. Tentativas restantes: {tentativas}"
             )
 
+def logout_usuario():
+    global logado, usuario_atual
 
+    if not logado:
+        print(Fore.RED + "Faça login primeiro!")
+        return
+    
+    usuario_atual = None
+    logado  = False
+
+    print(Fore.GREEN + "Logout realizado!")
+    
 # Dicionário que liga opções do menu às funções
 menu = {
     "1": cadastrar_usuario,
@@ -229,7 +240,8 @@ menu = {
     "3": depositar,
     "4": sacar,
     "5": ver_saldo,
-    "6": ver_extrato
+    "6": ver_extrato,
+    "7": logout_usuario
 }
 
 
@@ -247,7 +259,8 @@ def menu_principal():
 4 - Sacar
 5 - Ver saldo
 6 - Ver extrato
-7 - Sair
+7 - logout
+8 - Sair
 """)
 
         opcao = input(Fore.BLUE + "Escolha uma opção: ")
@@ -257,13 +270,12 @@ def menu_principal():
             menu[opcao]()
 
         # Fecha o programa
-        elif opcao == "7":
+        elif opcao == "8":
             print(Fore.YELLOW + "Saindo...")
             break
 
         else:
             print(Fore.RED + "Opção inválida!")
-
 
 # Inicia o sistema
 menu_principal()
