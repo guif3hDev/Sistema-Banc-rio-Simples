@@ -16,6 +16,7 @@ Um sistema bancário simples feito em Python no terminal, com funcionalidades de
 - Data e hora das movimentações
 - Validações de entrada
 - Tratamento de erros com `try/except`
+- Sistema de logout
 
 ---
 
