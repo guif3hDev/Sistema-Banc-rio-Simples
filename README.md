@@ -187,7 +187,6 @@ Durante o desenvolvimento pratiquei:
 
 - Interface gráfica
 - Banco de dados
-- Transferência entre usuários
 - Criptografia de senha
 - Histórico individual em arquivos separados
 - Interface web com Flask/Django
